@@ -7,36 +7,35 @@ import (
 	"log"
 
 	"github.com/jamesdphillips/jsondiff"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func ExampleCompare() {
-	pod := corev1.Pod{
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{{
-				Name:  "webserver",
-				Image: "nginx:latest",
-				VolumeMounts: []corev1.VolumeMount{{
-					Name:      "shared-data",
-					MountPath: "/usr/share/nginx/html",
-				}},
-			}},
-			Volumes: []corev1.Volume{{
-				Name: "shared-data",
-				VolumeSource: corev1.VolumeSource{
-					EmptyDir: &corev1.EmptyDirVolumeSource{
-						Medium: corev1.StorageMediumMemory,
-					},
-				},
-			}},
-		},
+	type Phone struct {
+		Type   string `json:"type"`
+		Number string `json:"number"`
 	}
-	newPod := pod.DeepCopy()
-
-	newPod.Spec.Containers[0].Image = "nginx:1.19.5-alpine"
-	newPod.Spec.Volumes[0].EmptyDir.Medium = corev1.StorageMediumDefault
-
-	patch, err := jsondiff.Compare(pod, newPod)
+	type Person struct {
+		Firstname string  `json:"firstName"`
+		Lastname  string  `json:"lastName"`
+		Gender    string  `json:"gender"`
+		Age       int     `json:"age"`
+		Phones    []Phone `json:"phoneNumbers"`
+	}
+	source, err := ioutil.ReadFile("testdata/examples/john.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var john Person
+	if err := json.Unmarshal(source, &john); err != nil {
+		log.Fatal(err)
+	}
+	jack := john
+	jack.Firstname = "Jack"
+	jack.Phones = append(john.Phones, Phone{
+		Type:   "mobile",
+		Number: "209-212-0015",
+	})
+	patch, err := jsondiff.Compare(john, jack)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,8 +43,8 @@ func ExampleCompare() {
 		fmt.Printf("%s\n", op)
 	}
 	// Output:
-	// {"op":"replace","path":"/spec/containers/0/image","value":"nginx:1.19.5-alpine"}
-	// {"op":"remove","path":"/spec/volumes/0/emptyDir/medium"}
+	// {"op":"replace","path":"/firstName","value":"Jack"}
+	// {"op":"add","path":"/phoneNumbers/-","value":{"number":"209-212-0015","type":"mobile"}}
 }
 
 func ExampleCompareJSON() {
