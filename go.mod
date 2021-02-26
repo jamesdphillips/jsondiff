@@ -1,5 +1,5 @@
-module github.com/wI2L/jsondiff
+module github.com/jamesdphillips/jsondiff
 
-go 1.15
+go 1.14
 
-require k8s.io/api v0.19.4
+require k8s.io/api v0.20.4 // indirect
